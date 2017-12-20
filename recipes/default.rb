@@ -9,20 +9,36 @@
 
 app = AppHelpers.new node['app']
 
-template "/etc/init.d/#{app.service :clockwork}" do
-  source 'init_clockwork.erb'
+cmd = <<~CMD.gsub(/\n|  +/, ' ')
+  RAILS_ENV=#{app.env}
+  PATH=/home/#{app.user}/.rbenv/bin:/home/#{app.user}/.rbenv/shims:$PATH
+    bundle exec clockwork #{app.dir(:root)}/config/clock.rb
+CMD
 
-  variables(
-    app_name: app.name,
-    app_user: app.user,
-    app_env: app.env,
-    app_root: app.dir(:root),
-    app_shared: app.dir(:shared)
-  )
+systemd_unit "#{app.service(:clockwork)}.service" do
+  content <<~SERVICE
+    [Unit]
+    Description=Clockwork for #{app.name} #{app.env}
+    After=syslog.target network.target
 
-  mode '0755'
-end
+    [Service]
+    SyslogIdentifier=#{app.service(:clockwork)}.service
+    User=#{app.user}
+    Group=#{app.group}
+    UMask=0002
+    WorkingDirectory=#{app.dir(:root)}
+    Restart=on-failure
 
-if File.exists? app.dir(:root)
-  service(app.service :clockwork) { action :enable }
+    ExecStart=/bin/bash -c '#{cmd}'
+
+    StandardOutput=syslog
+    StandardError=syslog
+
+    [Install]
+    WantedBy=multi-user.target
+  SERVICE
+
+  triggers_reload true
+  verify false
+  action %i[create enable start]
 end
