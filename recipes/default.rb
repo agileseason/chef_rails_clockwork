@@ -31,8 +31,8 @@ systemd_unit "#{app.service(:clockwork)}.service" do
 
     ExecStart=/bin/bash -c '#{cmd}'
 
-    StandardOutput=syslog
-    StandardError=syslog
+    StandardOutput=journal
+    StandardError=journal
 
     [Install]
     WantedBy=multi-user.target
