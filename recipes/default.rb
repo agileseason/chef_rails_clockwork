@@ -9,10 +9,10 @@
 
 app = AppHelpers.new node['app']
 
-cmd = <<~CMD.gsub(/\n|  +/, ' ')
+bundle_exec = <<~CMD.gsub(/\n|  +/, ' ')
   RAILS_ENV=#{app.env}
   PATH=/home/#{app.user}/.rbenv/bin:/home/#{app.user}/.rbenv/shims:$PATH
-    bundle exec clockwork #{app.dir(:root)}/config/clock.rb
+    bundle exec
 CMD
 
 systemd_unit "#{app.service(:clockwork)}.service" do
@@ -29,7 +29,7 @@ systemd_unit "#{app.service(:clockwork)}.service" do
     WorkingDirectory=#{app.dir(:root)}
     Restart=on-failure
 
-    ExecStart=/bin/bash -c '#{cmd}'
+    ExecStart=/bin/bash -c '#{bundle_exec} clockwork #{app.dir(:root)}/config/clock.rb'
 
     StandardOutput=journal
     StandardError=journal
