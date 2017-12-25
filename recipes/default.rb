@@ -40,5 +40,10 @@ systemd_unit "#{app.service(:clockwork)}.service" do
 
   triggers_reload true
   verify false
-  action %i[create enable start]
+
+  if ::File.exists?("#{app.dir(:root)}/Gemfile")
+    action %i[create enable start]
+  else
+    action %i[create enable]
+  end
 end
